@@ -15,6 +15,11 @@ class TodoList extends Component
     public $name;
 
     public $search;
+
+    public $editingID;
+
+    #[Rule("required|min:3|max:50")]
+    public $editingName;
     
     public function create(){
         $todo = $this->validateOnly('name');
@@ -25,24 +30,67 @@ class TodoList extends Component
 
         session()->flash('success','Todo Created');
 
+        $this->resetPage();
+
     }
 
     public function delete($id){
 
-        Todo::find( $id )->delete();
+        try{
 
-        session()->flash('deleted','Todo deleted');
-
+            Todo::findOrFail( $id )->delete();
+            
+            session()->flash('deleted','Todo deleted');
+        }catch(\Exception $e){
+            session()->flash('deleted','Todo deleted');
+            
+        }
+        
+    }
+    
+    public function edit($id){
+        try{
+            
+            $this->editingID = $id;
+            $this->editingName = Todo::findOrFail($id)->name;
+        }catch(\Exception $e){
+            session()->flash('deleted','Todo deoes not exist');
+            
+        }
     }
 
-    public function toggleCompletion($id){
-        $todo = Todo::find($id);
+    public function cancelEdit(){
+        $this->editingID = '';
+    }
 
-        $todo->update([
-            'completed' => !$todo->completed
-        ]);
-
+    public function update(){
         
+        try{
+            
+            Todo::findOrFail($this->editingID)->update(['name' => $this->validateOnly('editingName')['editingName']]);
+            
+            $this->editingID = '';
+        }catch(\Exception $e){
+            session()->flash('deleted','Todo deoes not exist');
+            
+        }
+    }
+    
+    public function toggleCompletion($id){
+        
+        try{
+            
+            $todo = Todo::findOrFail($id);
+            
+            $todo->update([
+                'completed' => !$todo->completed
+            ]);
+        }catch(\Exception $e){
+            session()->flash('deleted','Todo deoes not exist');
+
+        }
+
+
     }
 
     public function render()
